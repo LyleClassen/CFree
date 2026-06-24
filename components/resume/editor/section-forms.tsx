@@ -11,14 +11,14 @@ import {
 
 import { InlineSuggestions } from "@/components/resume/editor/inline-suggestions"
 import { Button } from "@/components/ui/button"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { emptyEducation, emptyExperience } from "@/lib/resume/factory"
 import { useResumeStore } from "@/lib/resume/store"
 import { PRESENT } from "@/lib/resume/types"
 
-function Field({
+function TextField({
   label,
   value,
   onChange,
@@ -33,8 +33,8 @@ function Field({
 }) {
   const id = React.useId()
   return (
-    <div className="flex flex-col gap-1">
-      <Label htmlFor={id}>{label}</Label>
+    <Field>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Input
         id={id}
         type={type}
@@ -42,52 +42,65 @@ function Field({
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
       />
-    </div>
+    </Field>
   )
 }
 
-function EntryControls({
+function EntryShell({
+  label,
   index,
   count,
   onMove,
   onRemove,
+  children,
 }: {
+  label: string
   index: number
   count: number
   onMove: (from: number, to: number) => void
   onRemove: (index: number) => void
+  children: React.ReactNode
 }) {
   return (
-    <div className="flex items-center gap-1">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Move up"
-        disabled={index === 0}
-        onClick={() => onMove(index, index - 1)}
-      >
-        <HugeiconsIcon icon={ArrowUp01Icon} />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Move down"
-        disabled={index === count - 1}
-        onClick={() => onMove(index, index + 1)}
-      >
-        <HugeiconsIcon icon={ArrowDown01Icon} />
-      </Button>
-      <Button
-        type="button"
-        variant="destructive"
-        size="icon-sm"
-        aria-label="Remove"
-        onClick={() => onRemove(index)}
-      >
-        <HugeiconsIcon icon={Delete02Icon} />
-      </Button>
+    <div className="rounded-lg border bg-background">
+      <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2">
+        <span className="font-mono text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
+          {label} {String(index + 1).padStart(2, "0")}
+        </span>
+        <div className="flex items-center gap-0.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Move up"
+            disabled={index === 0}
+            onClick={() => onMove(index, index - 1)}
+          >
+            <HugeiconsIcon icon={ArrowUp01Icon} />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Move down"
+            disabled={index === count - 1}
+            onClick={() => onMove(index, index + 1)}
+          >
+            <HugeiconsIcon icon={ArrowDown01Icon} />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Remove"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={() => onRemove(index)}
+          >
+            <HugeiconsIcon icon={Delete02Icon} />
+          </Button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-3 p-3">{children}</div>
     </div>
   )
 }
@@ -102,22 +115,22 @@ export function HeaderForm() {
   const { resume, updateResume } = useResumeStore()
   const h = resume.header
   return (
-    <div className="space-y-3">
-      <Field
+    <FieldGroup>
+      <TextField
         label="Full name"
         value={h.fullName}
         placeholder="Jane Doe"
         onChange={(v) => updateResume((d) => void (d.header.fullName = v))}
       />
       <div className="grid grid-cols-2 gap-3">
-        <Field
+        <TextField
           label="Email"
           type="email"
           value={h.email}
           placeholder="jane@example.com"
           onChange={(v) => updateResume((d) => void (d.header.email = v))}
         />
-        <Field
+        <TextField
           label="Phone"
           value={h.phone}
           placeholder="(555) 123-4567"
@@ -125,13 +138,13 @@ export function HeaderForm() {
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Field
+        <TextField
           label="Location"
           value={h.location}
           placeholder="San Francisco, CA"
           onChange={(v) => updateResume((d) => void (d.header.location = v))}
         />
-        <Field
+        <TextField
           label="LinkedIn"
           value={h.linkedin ?? ""}
           placeholder="linkedin.com/in/jane"
@@ -139,26 +152,26 @@ export function HeaderForm() {
         />
       </div>
       <InlineSuggestions section="header" />
-    </div>
+    </FieldGroup>
   )
 }
 
 export function SummaryForm() {
   const { resume, updateResume } = useResumeStore()
   return (
-    <div className="space-y-2">
-      <Label htmlFor="summary">Professional summary</Label>
-      <Textarea
-        id="summary"
-        rows={4}
-        value={resume.summary}
-        placeholder="A short, impact-focused summary of your experience…"
-        onChange={(e) =>
-          updateResume((d) => void (d.summary = e.target.value))
-        }
-      />
+    <FieldGroup>
+      <Field>
+        <FieldLabel htmlFor="summary">Professional summary</FieldLabel>
+        <Textarea
+          id="summary"
+          rows={4}
+          value={resume.summary}
+          placeholder="A short, impact-focused summary of your experience…"
+          onChange={(e) => updateResume((d) => void (d.summary = e.target.value))}
+        />
+      </Field>
       <InlineSuggestions section="summary" />
-    </div>
+    </FieldGroup>
   )
 }
 
@@ -167,26 +180,18 @@ export function ExperienceForm() {
   const items = resume.experience
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {items.map((exp, idx) => (
-        <div key={exp.id} className="space-y-2 rounded-md border p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              Experience {idx + 1}
-            </span>
-            <EntryControls
-              index={idx}
-              count={items.length}
-              onMove={(f, t) =>
-                updateResume((d) => move(d.experience, f, t))
-              }
-              onRemove={(i) =>
-                updateResume((d) => void d.experience.splice(i, 1))
-              }
-            />
-          </div>
+        <EntryShell
+          key={exp.id}
+          label="Role"
+          index={idx}
+          count={items.length}
+          onMove={(f, t) => updateResume((d) => move(d.experience, f, t))}
+          onRemove={(i) => updateResume((d) => void d.experience.splice(i, 1))}
+        >
           <div className="grid grid-cols-2 gap-3">
-            <Field
+            <TextField
               label="Role"
               value={exp.role}
               placeholder="Senior Engineer"
@@ -194,7 +199,7 @@ export function ExperienceForm() {
                 updateResume((d) => void (d.experience[idx].role = v))
               }
             />
-            <Field
+            <TextField
               label="Company"
               value={exp.company}
               placeholder="Acme Inc."
@@ -204,23 +209,23 @@ export function ExperienceForm() {
             />
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <Field
-              label="Start date"
+            <TextField
+              label="Start"
               value={exp.startDate}
               placeholder="Jan 2022"
               onChange={(v) =>
                 updateResume((d) => void (d.experience[idx].startDate = v))
               }
             />
-            <Field
-              label="End date"
+            <TextField
+              label="End"
               value={exp.endDate}
               placeholder="Present"
               onChange={(v) =>
                 updateResume((d) => void (d.experience[idx].endDate = v))
               }
             />
-            <Field
+            <TextField
               label="Location"
               value={exp.location}
               placeholder="Remote"
@@ -232,6 +237,7 @@ export function ExperienceForm() {
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
             <input
               type="checkbox"
+              className="accent-primary"
               checked={exp.endDate === PRESENT}
               onChange={(e) =>
                 updateResume(
@@ -245,10 +251,10 @@ export function ExperienceForm() {
             Current role (sets end date to “Present”)
           </label>
 
-          <div className="space-y-1">
-            <Label>Bullets</Label>
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel>Bullets</FieldLabel>
             {exp.bullets.map((bullet, bIdx) => (
-              <div key={bIdx} className="flex items-start gap-1">
+              <div key={bIdx} className="flex items-start gap-1.5">
                 <Textarea
                   rows={1}
                   value={bullet}
@@ -265,6 +271,7 @@ export function ExperienceForm() {
                   variant="ghost"
                   size="icon-sm"
                   aria-label="Remove bullet"
+                  className="mt-1 shrink-0 text-muted-foreground hover:text-destructive"
                   onClick={() =>
                     updateResume(
                       (d) => void d.experience[idx].bullets.splice(bIdx, 1)
@@ -279,6 +286,7 @@ export function ExperienceForm() {
               type="button"
               variant="outline"
               size="sm"
+              className="self-start"
               onClick={() =>
                 updateResume((d) => void d.experience[idx].bullets.push(""))
               }
@@ -287,14 +295,17 @@ export function ExperienceForm() {
               Add bullet
             </Button>
           </div>
-        </div>
+        </EntryShell>
       ))}
 
       <Button
         type="button"
         variant="outline"
         size="sm"
-        onClick={() => updateResume((d) => void d.experience.push(emptyExperience()))}
+        className="self-start"
+        onClick={() =>
+          updateResume((d) => void d.experience.push(emptyExperience()))
+        }
       >
         <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />
         Add experience
@@ -309,23 +320,17 @@ export function EducationForm() {
   const items = resume.education
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {items.map((edu, idx) => (
-        <div key={edu.id} className="space-y-2 rounded-md border p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              Education {idx + 1}
-            </span>
-            <EntryControls
-              index={idx}
-              count={items.length}
-              onMove={(f, t) => updateResume((d) => move(d.education, f, t))}
-              onRemove={(i) =>
-                updateResume((d) => void d.education.splice(i, 1))
-              }
-            />
-          </div>
-          <Field
+        <EntryShell
+          key={edu.id}
+          label="School"
+          index={idx}
+          count={items.length}
+          onMove={(f, t) => updateResume((d) => move(d.education, f, t))}
+          onRemove={(i) => updateResume((d) => void d.education.splice(i, 1))}
+        >
+          <TextField
             label="Institution"
             value={edu.institution}
             placeholder="State University"
@@ -334,7 +339,7 @@ export function EducationForm() {
             }
           />
           <div className="grid grid-cols-2 gap-3">
-            <Field
+            <TextField
               label="Degree"
               value={edu.degree}
               placeholder="B.S."
@@ -342,7 +347,7 @@ export function EducationForm() {
                 updateResume((d) => void (d.education[idx].degree = v))
               }
             />
-            <Field
+            <TextField
               label="Field"
               value={edu.field}
               placeholder="Computer Science"
@@ -352,15 +357,15 @@ export function EducationForm() {
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field
-              label="Graduation date"
+            <TextField
+              label="Graduation"
               value={edu.graduationDate}
               placeholder="May 2021"
               onChange={(v) =>
                 updateResume((d) => void (d.education[idx].graduationDate = v))
               }
             />
-            <Field
+            <TextField
               label="GPA (optional)"
               value={edu.gpa ?? ""}
               placeholder="3.8"
@@ -369,14 +374,17 @@ export function EducationForm() {
               }
             />
           </div>
-        </div>
+        </EntryShell>
       ))}
 
       <Button
         type="button"
         variant="outline"
         size="sm"
-        onClick={() => updateResume((d) => void d.education.push(emptyEducation()))}
+        className="self-start"
+        onClick={() =>
+          updateResume((d) => void d.education.push(emptyEducation()))
+        }
       >
         <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />
         Add education
@@ -398,40 +406,40 @@ export function SkillsForm() {
   }
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor="skill-input">Skills</Label>
-      <div className="flex gap-2">
-        <Input
-          id="skill-input"
-          value={draft}
-          placeholder="Add a skill and press Enter"
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault()
-              addSkill()
-            }
-          }}
-        />
-        <Button type="button" variant="outline" size="sm" onClick={addSkill}>
-          Add
-        </Button>
-      </div>
+    <FieldGroup>
+      <Field>
+        <FieldLabel htmlFor="skill-input">Skills</FieldLabel>
+        <div className="flex gap-2">
+          <Input
+            id="skill-input"
+            value={draft}
+            placeholder="Add a skill, press Enter"
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                addSkill()
+              }
+            }}
+          />
+          <Button type="button" variant="outline" size="sm" onClick={addSkill}>
+            Add
+          </Button>
+        </div>
+      </Field>
       {resume.skills.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 pt-1">
+        <div className="flex flex-wrap gap-1.5">
           {resume.skills.map((skill, idx) => (
             <span
               key={`${skill}-${idx}`}
-              className="inline-flex items-center gap-1 rounded-full border bg-muted/50 px-2 py-0.5 text-xs"
+              className="inline-flex items-center gap-1 rounded-full border bg-muted/50 py-0.5 pr-1.5 pl-2.5 text-xs"
             >
               {skill}
               <button
                 type="button"
                 aria-label={`Remove ${skill}`}
                 className="text-muted-foreground hover:text-destructive"
-                onClick={() =>
-                  updateResume((d) => void d.skills.splice(idx, 1))
-                }
+                onClick={() => updateResume((d) => void d.skills.splice(idx, 1))}
               >
                 <HugeiconsIcon icon={Delete02Icon} className="size-3" />
               </button>
@@ -440,6 +448,6 @@ export function SkillsForm() {
         </div>
       )}
       <InlineSuggestions section="skills" />
-    </div>
+    </FieldGroup>
   )
 }
