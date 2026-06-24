@@ -1,21 +1,40 @@
-# Next.js template
+# Resume Builder (MVP)
 
-This is a Next.js template with shadcn/ui.
+A browser-only resume builder: import an existing resume (PDF/DOCX) or start from
+scratch, edit it in a split-pane editor with a live PDF preview, get an LLM-powered
+review against the 2026 resume guidelines, pick an ATS-safe template, and export to PDF.
 
-## Adding components
+All resume data lives in the browser's `localStorage` — there is no database and no
+account. The only server-side code is a thin proxy that keeps the OpenRouter API key
+off the client.
 
-To add components to your app, run the following command:
+## Getting started
 
 ```bash
-npx shadcn@latest add button
+bun install
+bun run dev
 ```
 
-This will place the ui components in the `components` directory.
+The app opens straight into the builder.
 
-## Using components
+## Environment
 
-To use the components in your app, import them as follows:
+Copy `.env.example` to `.env.local` and fill in the values:
 
-```tsx
-import { Button } from "@/components/ui/button";
+| Variable             | Required | Default              | Purpose                                            |
+| -------------------- | -------- | -------------------- | -------------------------------------------------- |
+| `OPENROUTER_API_KEY` | No       | _(empty)_            | Enables automated LLM review via OpenRouter.       |
+| `OPENROUTER_MODEL`   | No       | `openai/gpt-4o-mini` | Model used for the review and import structuring.  |
+
+Without `OPENROUTER_API_KEY` the app stays fully usable: review falls back to a manual
+checklist derived from the guidelines, and resume import uses heuristic parsing instead
+of LLM-assisted structuring.
+
+## Scripts
+
+```bash
+bun run dev        # start the dev server
+bun run build      # production build
+bun run typecheck  # tsc --noEmit
+bun run lint       # eslint
 ```
