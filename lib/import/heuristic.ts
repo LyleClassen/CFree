@@ -15,12 +15,23 @@ const HEADINGS: { key: SectionKey; patterns: RegExp }[] = [
 ]
 
 function classifyHeading(line: string): SectionKey | null {
-  const trimmed = line.trim()
+  // The OCR sidecar marks headings as "## SKILLS"; tolerate that prefix.
+  const trimmed = line.replace(/^#+\s*/, "").trim()
   if (trimmed.length === 0 || trimmed.length > 40) return null
   for (const h of HEADINGS) {
     if (h.patterns.test(trimmed)) return h.key
   }
   return null
+}
+
+/** True for an explicit sidecar heading line ("## ...") of any name. */
+function isMarkedHeading(line: string): boolean {
+  return /^#+\s+\S/.test(line.trim())
+}
+
+/** True for a sidecar column marker like "[COLUMN sidebar]". */
+function isColumnMarker(line: string): boolean {
+  return /^\[COLUMN\b/i.test(line.trim())
 }
 
 /**
@@ -56,8 +67,28 @@ export function heuristicParse(text: string): Resume {
     education: [],
     skills: [],
   }
+  // When the text comes from the OCR sidecar it carries explicit "## HEADING"
+  // and "[COLUMN ...]" markers. In that mode we trust ONLY marked headings, so
+  // a body line that merely starts with a section keyword (e.g. "Technologies
+  // worked with:" inside a job) can't be mistaken for a heading and pull the
+  // rest of the experience into skills. Plain text (native pdf-parse / OCR
+  // fallback) keeps the original regex-based detection.
+  const marked = lines.some((l) => isMarkedHeading(l) || isColumnMarker(l))
   let current: SectionKey | null = null
   for (const line of lines) {
+    if (isColumnMarker(line)) continue
+
+    if (marked) {
+      if (isMarkedHeading(line)) {
+        // A recognized heading switches sections; an unrecognized one (e.g.
+        // "## LANGUAGES", "## HOBBIES") ends the current section.
+        current = classifyHeading(line)
+        continue
+      }
+      if (current) buckets[current].push(line)
+      continue
+    }
+
     const heading = classifyHeading(line)
     if (heading) {
       current = heading

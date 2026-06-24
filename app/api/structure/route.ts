@@ -12,6 +12,17 @@ const STRUCTURE_PROMPT = `You convert raw resume text (which may contain OCR noi
 
 Clean up obvious OCR artifacts (e.g. " egmail.com" -> "@gmail.com") but never invent facts. Leave a field empty if the information is not present.
 
+The text may have been produced by a layout-aware extractor and can contain markers:
+- "[COLUMN sidebar]" / "[COLUMN main]" mark which column content came from. A sidebar usually holds contact details, links, a SKILLS list, languages, and hobbies; the main column usually holds the profile/summary and employment history. Use these as strong section boundaries.
+- "## HEADING" lines are section headings (e.g. "## SKILLS", "## EMPLOYMENT HISTORY", "## EDUCATION").
+
+Section mapping rules — follow strictly:
+- Populate "skills" ONLY from the dedicated skills section (e.g. under "## SKILLS"). Each listed item is one skill.
+- Tool/technology lists that appear INSIDE an employment entry — introduced by phrases like "Technologies worked with:", "Primary Technologies Worked With:", "Tech stack:", or listed under a job — belong in that experience entry's "bullets". NEVER copy them into the top-level "skills" array.
+- "Client Projects:" / "Worked for clients:" lists under a job are also that entry's "bullets".
+- Map employment/experience headings to "experience", education to "education", and contact details to "header". Ignore sections with no matching field (languages, hobbies, references, courses, date of birth, nationality, driving licence) — do not invent fields for them.
+- For each experience entry, split "Role at Company, Location" into role, company, and location; put the date range into startDate/endDate.
+
 Respond with ONLY a JSON object (no markdown, no prose) in exactly this shape:
 {
   "header": { "fullName": "", "email": "", "phone": "", "location": "", "linkedin": "" },

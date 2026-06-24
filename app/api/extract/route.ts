@@ -9,7 +9,42 @@ export interface ExtractResponse {
   text?: string
   /** True when a PDF yielded below-threshold native text (run OCR client-side). */
   imageBased?: boolean
+  /** Which path produced the text: "sidecar" | "native" | "" (debugging). */
+  engine?: string
   error?: string
+}
+
+interface SidecarResponse {
+  ok: boolean
+  text?: string
+  engine?: string
+}
+
+// Forward a PDF to the Python OCR sidecar (DocTR + PaddleOCR, layout-aware).
+// Returns null on any failure so callers can fall back to native extraction.
+async function trySidecar(
+  buffer: Buffer,
+  filename: string
+): Promise<{ text: string; engine: string } | null> {
+  const base = process.env.OCR_SIDECAR_URL?.trim()
+  if (!base) return null
+  try {
+    const form = new FormData()
+    form.append("file", new Blob([new Uint8Array(buffer)]), filename)
+    const res = await fetch(`${base.replace(/\/$/, "")}/ocr`, {
+      method: "POST",
+      body: form,
+      // The sidecar may need to load OCR models on the first scanned page.
+      signal: AbortSignal.timeout(120_000),
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as SidecarResponse
+    const text = (data.text ?? "").trim()
+    if (!data.ok || !text) return null
+    return { text, engine: data.engine || "sidecar" }
+  } catch {
+    return null
+  }
 }
 
 export async function POST(
@@ -54,7 +89,19 @@ export async function POST(
       return NextResponse.json({ ok: true, text: value.trim() })
     }
 
-    // PDF: attempt native text extraction.
+    // PDF: prefer the layout-aware OCR sidecar when configured. It reconstructs
+    // columns/reading order, which native extraction flattens (and which causes
+    // sidebar skills to bleed into the main column's experience).
+    const sidecar = await trySidecar(buffer, file.name)
+    if (sidecar) {
+      return NextResponse.json({
+        ok: true,
+        text: sidecar.text,
+        engine: sidecar.engine,
+      })
+    }
+
+    // Fallback: native text extraction.
     const { PDFParse } = await import("pdf-parse")
     const parser = new PDFParse({ data: new Uint8Array(buffer) })
     try {
@@ -67,7 +114,7 @@ export async function POST(
         // Likely a scanned/image-based PDF — let the client run OCR.
         return NextResponse.json({ ok: true, text: "", imageBased: true })
       }
-      return NextResponse.json({ ok: true, text })
+      return NextResponse.json({ ok: true, text, engine: "native" })
     } finally {
       await parser.destroy()
     }

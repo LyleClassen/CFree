@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "sidecar": "cd sidecar && uv run uvicorn app.main:app --reload --port 8000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
