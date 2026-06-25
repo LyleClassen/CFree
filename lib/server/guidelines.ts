@@ -11,6 +11,7 @@ export async function readGuidelines(): Promise<string> {
     "refs",
     "resume_guide_lines_2026.md"
   )
+  console.log(file)
   cached = await readFile(file, "utf8")
   return cached
 }

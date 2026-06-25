@@ -56,7 +56,8 @@ export async function POST(request: Request): Promise<NextResponse<ReviewRespons
   let guidelines: string
   try {
     guidelines = await readGuidelines()
-  } catch {
+  } catch (e) {
+    console.error("Failed to read guidelines:", e)
     return NextResponse.json(
       { ok: false, error: "Review unavailable. Please try again." },
       { status: 500 }
