@@ -8,7 +8,8 @@ import { File01Icon } from "@hugeicons/core-free-icons"
 import { ResumeDocument } from "@/components/resume/resume-document"
 import { TEMPLATES } from "@/lib/resume/templates"
 import { cn } from "@/lib/utils"
-import { useResumeStore } from "@/lib/resume/store"
+import { useResumeContext } from "@/lib/resume/resume-context"
+import { useTemplateContext } from "@/lib/resume/template-context"
 
 const DEBOUNCE_MS = 400
 
@@ -18,7 +19,8 @@ const DEBOUNCE_MS = 400
  * export, so the preview is WYSIWYG. Re-renders are debounced.
  */
 export function ResumePreview() {
-  const { resume, template, hydrated } = useResumeStore()
+  const { resume, hydrated } = useResumeContext()
+  const { template } = useTemplateContext()
   const [url, setUrl] = React.useState<string | null>(null)
   const [rendering, setRendering] = React.useState(false)
   const urlRef = React.useRef<string | null>(null)

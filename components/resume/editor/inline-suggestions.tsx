@@ -10,7 +10,8 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { isApplicableFeedback } from "@/lib/resume/apply-feedback"
-import { useResumeStore } from "@/lib/resume/store"
+import { useReviewContext } from "@/lib/resume/review-context"
+import { useFeedbackContext } from "@/lib/resume/feedback-context"
 import type { FeedbackSection } from "@/lib/review/types"
 
 /**
@@ -19,14 +20,14 @@ import type { FeedbackSection } from "@/lib/review/types"
  * feedback for this section.
  */
 export function InlineSuggestions({ section }: { section: FeedbackSection }) {
+  const { review } = useReviewContext()
   const {
-    review,
     appliedFeedback,
     applyFeedback,
     undoFeedback,
     applyFeedbackSection,
     undoFeedbackSection,
-  } = useResumeStore()
+  } = useFeedbackContext()
 
   if (review.status !== "ready" || !review.result) return null
 

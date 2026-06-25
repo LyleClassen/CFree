@@ -8,7 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useResumeStore } from "@/lib/resume/store"
+import { useReviewContext } from "@/lib/resume/review-context"
 
 /** A static, guideline-based tip shown before any review has run. */
 export interface FieldHint {
@@ -32,7 +32,7 @@ export function SuggestionHint({
   fieldPath: string
   fallback?: FieldHint
 }) {
-  const { review } = useResumeStore()
+  const { review } = useReviewContext()
   const item = review.result?.feedback.find((f) => f.fieldPath === fieldPath)
 
   const message = item?.message ?? fallback?.message

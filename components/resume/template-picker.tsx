@@ -3,7 +3,7 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Tick02Icon } from "@hugeicons/core-free-icons"
 
-import { useResumeStore } from "@/lib/resume/store"
+import { useTemplateContext } from "@/lib/resume/template-context"
 import { TEMPLATES, type TemplateMeta } from "@/lib/resume/templates"
 import { cn } from "@/lib/utils"
 
@@ -58,7 +58,7 @@ function Specimen({ template }: { template: TemplateMeta }) {
 }
 
 export function TemplatePicker() {
-  const { template, setTemplate } = useResumeStore()
+  const { template, setTemplate } = useTemplateContext()
 
   return (
     <div className="grid grid-cols-2 gap-2.5">

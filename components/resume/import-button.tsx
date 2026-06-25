@@ -10,12 +10,14 @@ import type { ExtractResponse } from "@/app/api/extract/route"
 import type { StructureResponse } from "@/app/api/structure/route"
 import { buildLinksBlock } from "@/lib/import/links"
 import { ocrPdf } from "@/lib/import/ocr"
-import { useResumeStore } from "@/lib/resume/store"
+import { useResumeContext } from "@/lib/resume/resume-context"
+import { useReviewContext } from "@/lib/resume/review-context"
 
 const ACCEPT = ".pdf,.docx"
 
 export function ImportButton() {
-  const { setResume, clearReview } = useResumeStore()
+  const { setResume } = useResumeContext()
+  const { clearReview } = useReviewContext()
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [status, setStatus] = React.useState<string | null>(null)
   const busy = status !== null

@@ -9,10 +9,12 @@ import { toast } from "sonner"
 import { ResumeDocument } from "@/components/resume/resume-document"
 import { Button } from "@/components/ui/button"
 import { exportFileName } from "@/lib/resume/export"
-import { useResumeStore } from "@/lib/resume/store"
+import { useResumeContext } from "@/lib/resume/resume-context"
+import { useTemplateContext } from "@/lib/resume/template-context"
 
 export function ExportButton() {
-  const { resume, template } = useResumeStore()
+  const { resume } = useResumeContext()
+  const { template } = useTemplateContext()
   const [exporting, setExporting] = React.useState(false)
 
   async function handleExport() {

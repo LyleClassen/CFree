@@ -21,7 +21,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { ResumeProvider, useResumeStore } from "@/lib/resume/store"
+import { BuilderProviders, useResumeContext } from "@/lib/resume/builder-providers"
+import { useResetAll } from "@/hooks/use-reset-all"
 import type { Resume } from "@/lib/resume/types"
 
 // The preview renders PDFs in the browser — never on the server.
@@ -131,7 +132,7 @@ function SectionBlock({
 }
 
 function DocumentStatus() {
-  const { resume } = useResumeStore()
+  const { resume } = useResumeContext()
   const done = SECTIONS.filter((s) => s.filled(resume)).length
   const total = SECTIONS.length
   return (
@@ -176,7 +177,7 @@ function Wordmark() {
 }
 
 function Toolbar() {
-  const { resetResume } = useResumeStore()
+  const resetAll = useResetAll()
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card/80 px-4 backdrop-blur-sm">
       <Wordmark />
@@ -195,7 +196,7 @@ function Toolbar() {
                       "Start a new blank résumé? This clears the current one."
                     )
                   ) {
-                    resetResume()
+                    resetAll()
                   }
                 }}
               >
@@ -214,7 +215,7 @@ function Toolbar() {
 }
 
 function BuilderInner() {
-  const { resume } = useResumeStore()
+  const { resume } = useResumeContext()
   return (
     <div className="flex h-svh flex-col">
       <Toolbar />
@@ -259,8 +260,8 @@ function BuilderInner() {
 
 export function Builder() {
   return (
-    <ResumeProvider>
+    <BuilderProviders>
       <BuilderInner />
-    </ResumeProvider>
+    </BuilderProviders>
   )
 }

@@ -24,7 +24,7 @@ import {
   emptyExperience,
   emptySkillGroup,
 } from "@/lib/resume/factory"
-import { useResumeStore } from "@/lib/resume/store"
+import { useResumeContext } from "@/lib/resume/resume-context"
 import { PRESENT } from "@/lib/resume/types"
 
 function TextField({
@@ -124,7 +124,7 @@ function move<T>(arr: T[], from: number, to: number): void {
 }
 
 export function HeaderForm() {
-  const { resume, updateResume } = useResumeStore()
+  const { resume, updateResume } = useResumeContext()
   const h = resume.header
   return (
     <FieldGroup>
@@ -190,7 +190,7 @@ const BULLET_HINT: FieldHint = {
 }
 
 export function SummaryForm() {
-  const { resume, updateResume } = useResumeStore()
+  const { resume, updateResume } = useResumeContext()
 
   return (
     <FieldGroup>
@@ -216,7 +216,7 @@ export function SummaryForm() {
 }
 
 export function ExperienceForm() {
-  const { resume, updateResume } = useResumeStore()
+  const { resume, updateResume } = useResumeContext()
   const items = resume.experience
 
   return (
@@ -378,7 +378,7 @@ export function ExperienceForm() {
 }
 
 export function EducationForm() {
-  const { resume, updateResume } = useResumeStore()
+  const { resume, updateResume } = useResumeContext()
   const items = resume.education
 
   return (
@@ -466,7 +466,7 @@ export function EducationForm() {
 
 /** A single skill category: editable name, reorder/remove, and its skill chips. */
 function SkillGroupEditor({ index, count }: { index: number; count: number }) {
-  const { resume, updateResume } = useResumeStore()
+  const { resume, updateResume } = useResumeContext()
   const group = resume.skills[index]
   const [draft, setDraft] = React.useState("")
 
@@ -566,7 +566,7 @@ function SkillGroupEditor({ index, count }: { index: number; count: number }) {
 }
 
 export function SkillsForm() {
-  const { resume, updateResume } = useResumeStore()
+  const { resume, updateResume } = useResumeContext()
   const groups = resume.skills
 
   return (

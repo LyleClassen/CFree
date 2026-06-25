@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils"
 import { isApplicableFeedback } from "@/lib/resume/apply-feedback"
 import { MANUAL_CHECKLIST } from "@/lib/review/checklist"
 import { REVIEW_CATEGORIES } from "@/lib/review/types"
-import { useResumeStore } from "@/lib/resume/store"
+import { useReviewContext } from "@/lib/resume/review-context"
+import { useFeedbackContext } from "@/lib/resume/feedback-context"
 
 function scoreTone(score: number): string {
   if (score >= 80) return "text-emerald-600 dark:text-emerald-400"
@@ -32,13 +33,9 @@ function scoreBand(score: number): string {
 }
 
 export function ReviewPanel() {
-  const {
-    review,
-    requestReview,
-    appliedFeedback,
-    applyAllFeedback,
-    undoAllFeedback,
-  } = useResumeStore()
+  const { review, requestReview } = useReviewContext()
+  const { appliedFeedback, applyAllFeedback, undoAllFeedback } =
+    useFeedbackContext()
 
   const feedback = review.result?.feedback ?? []
   const applicableCount = feedback.filter(isApplicableFeedback).length
