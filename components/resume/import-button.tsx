@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import type { ExtractResponse } from "@/app/api/extract/route"
 import type { StructureResponse } from "@/app/api/structure/route"
+import { buildLinksBlock } from "@/lib/import/links"
 import { ocrPdf } from "@/lib/import/ocr"
 import { useResumeStore } from "@/lib/resume/store"
 
@@ -64,6 +65,11 @@ export function ImportButton() {
         }
         return
       }
+
+      // Append harvested hyperlinks (LinkedIn/email/phone) so the structurer
+      // gets the real URLs — they're absent from every text-extraction engine.
+      const linksBlock = buildLinksBlock(extract.links ?? [])
+      if (linksBlock) text = `${text}\n\n${linksBlock}`
 
       setStatus("Structuring content…")
       const structureRes = await fetch("/api/structure", {

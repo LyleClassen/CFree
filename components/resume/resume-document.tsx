@@ -1,5 +1,6 @@
 import {
   Document,
+  Link,
   Page,
   StyleSheet,
   Text,
@@ -173,6 +174,10 @@ function makeStyles(t: TemplateTheme) {
     contactDivider: {
       color: t.faint,
       marginHorizontal: 5,
+    },
+    contactLink: {
+      color: t.accent,
+      textDecoration: "none",
     },
     section: {
       marginBottom: t.sectionGap,
@@ -349,6 +354,19 @@ function Section({
   )
 }
 
+/** Prefix a bare URL with https:// so PDF links resolve. */
+function normalizeUrl(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`
+}
+
+/** Display form of a LinkedIn URL: drop scheme, "www.", and trailing slash. */
+function displayLinkedIn(url: string): string {
+  return url
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .replace(/\/$/, "")
+}
+
 export function ResumeDocument({
   resume,
   template,
@@ -360,19 +378,39 @@ export function ResumeDocument({
   const styles = makeStyles(theme)
   const { header, summary, experience, education, skills } = resume
 
-  const contactParts = [
-    header.email,
-    header.phone,
-    header.location,
-    header.linkedin,
-  ].filter((p) => p && p.trim().length > 0)
+  // Each part carries an optional href so contact details render as clickable
+  // links in the exported PDF (LinkedIn → URL, email → mailto:, phone → tel:).
+  const contactParts: { text: string; href?: string }[] = [
+    header.email && {
+      text: header.email,
+      href: `mailto:${header.email.trim()}`,
+    },
+    header.phone && {
+      text: header.phone,
+      href: `tel:${header.phone.replace(/[^\d+]/g, "")}`,
+    },
+    header.location && { text: header.location },
+    header.linkedin && {
+      text: displayLinkedIn(header.linkedin.trim()),
+      href: normalizeUrl(header.linkedin.trim()),
+    },
+  ].filter(
+    (p): p is { text: string; href?: string } =>
+      typeof p === "object" && p !== null && p.text.trim().length > 0
+  )
 
   const Contact =
     contactParts.length > 0 ? (
       <View style={styles.contactRow}>
         {contactParts.map((part, i) => (
           <Text key={i}>
-            {part}
+            {part.href ? (
+              <Link src={part.href} style={styles.contactLink}>
+                {part.text}
+              </Link>
+            ) : (
+              part.text
+            )}
             {i < contactParts.length - 1 && (
               <Text style={styles.contactDivider}>
                 {theme.headingStyle === "flanked" ? "  ·  " : "   •   "}

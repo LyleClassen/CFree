@@ -22,6 +22,7 @@ Section mapping rules — follow strictly:
 - "Client Projects:" / "Worked for clients:" lists under a job are also that entry's "bullets".
 - Map employment/experience headings to "experience", education to "education", and contact details to "header". Ignore sections with no matching field (languages, hobbies, references, courses, date of birth, nationality, driving licence) — do not invent fields for them.
 - For each experience entry, split "Role at Company, Location" into role, company, and location; put the date range into startDate/endDate.
+- A "[SOURCE LINKS]" block lists the document's real hyperlink targets. When present, use these exact values for the header: the "LinkedIn:" value (the full URL, e.g. "https://www.linkedin.com/in/jane/") is the "linkedin" field — never use anchor words like "LinkedIn" or "Profile" as the value. Use the "Email:" and "Phone:" values for those header fields when present.
 
 Respond with ONLY a JSON object (no markdown, no prose) in exactly this shape:
 {

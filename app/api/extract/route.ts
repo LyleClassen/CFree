@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server"
 
+import {
+  extractDocxHyperlinks,
+  extractPdfUriAnnotations,
+} from "@/lib/import/links"
+
 // Minimum native-text length below which a PDF is treated as image-based and
 // the client is told to run the OCR fallback.
 const TEXT_THRESHOLD = 80
@@ -11,6 +16,12 @@ export interface ExtractResponse {
   imageBased?: boolean
   /** Which path produced the text: "sidecar" | "native" | "" (debugging). */
   engine?: string
+  /**
+   * Hyperlink targets harvested from the file's annotations/relationships
+   * (LinkedIn, mailto:, tel:, …). Native text extraction drops these, so the
+   * client appends them to the text before structuring.
+   */
+  links?: string[]
   error?: string
 }
 
@@ -82,11 +93,22 @@ export async function POST(
 
   const buffer = Buffer.from(await file.arrayBuffer())
 
+  // Hyperlinks (LinkedIn, mailto:, tel:, …) are stored as annotations and are
+  // lost by native text extraction, so harvest them up front from the raw
+  // buffer and return them on every path — the client appends them to the text
+  // before structuring. For DOCX they live in relationships (recovered below).
+  const links = isPdf ? extractPdfUriAnnotations(buffer) : []
+
   try {
     if (isDocx) {
       const mammoth = (await import("mammoth")).default
       const { value } = await mammoth.extractRawText({ buffer })
-      return NextResponse.json({ ok: true, text: value.trim() })
+      const docxLinks = await extractDocxHyperlinks(buffer)
+      return NextResponse.json({
+        ok: true,
+        text: value.trim(),
+        links: docxLinks,
+      })
     }
 
     // PDF: prefer the layout-aware OCR sidecar when configured. It reconstructs
@@ -98,6 +120,7 @@ export async function POST(
         ok: true,
         text: sidecar.text,
         engine: sidecar.engine,
+        links,
       })
     }
 
@@ -112,16 +135,21 @@ export async function POST(
         .trim()
       if (text.length < TEXT_THRESHOLD) {
         // Likely a scanned/image-based PDF — let the client run OCR.
-        return NextResponse.json({ ok: true, text: "", imageBased: true })
+        return NextResponse.json({
+          ok: true,
+          text: "",
+          imageBased: true,
+          links,
+        })
       }
-      return NextResponse.json({ ok: true, text, engine: "native" })
+      return NextResponse.json({ ok: true, text, engine: "native", links })
     } finally {
       await parser.destroy()
     }
   } catch {
     // Native extraction failed entirely; for PDFs, fall back to OCR.
     if (isPdf) {
-      return NextResponse.json({ ok: true, text: "", imageBased: true })
+      return NextResponse.json({ ok: true, text: "", imageBased: true, links })
     }
     return NextResponse.json(
       { ok: false, error: "Could not read the uploaded file." },

@@ -3,7 +3,7 @@ import type { Resume } from "@/lib/resume/types"
 
 const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/
 const PHONE_RE = /(\+?\(?\d[\d\s().-]{7,}\d)/
-const LINKEDIN_RE = /(linkedin\.com\/[^\s,]+)/i
+const LINKEDIN_RE = /(https?:\/\/)?(www\.)?linkedin\.com\/[^\s,]+/i
 
 type SectionKey = "summary" | "experience" | "education" | "skills"
 
@@ -52,7 +52,10 @@ export function heuristicParse(text: string): Resume {
   const headerScan = lines.slice(0, 8).join("  ")
   resume.header.email = headerScan.match(EMAIL_RE)?.[0] ?? ""
   resume.header.phone = headerScan.match(PHONE_RE)?.[0]?.trim() ?? ""
-  resume.header.linkedin = headerScan.match(LINKEDIN_RE)?.[0] ?? ""
+  // LinkedIn URLs may appear anywhere (e.g. appended from PDF annotations),
+  // so search the full text rather than just the header lines.
+  const fullText = lines.join(" ")
+  resume.header.linkedin = fullText.match(LINKEDIN_RE)?.[0] ?? ""
 
   // First line that isn't contact info is most likely the name.
   const nameLine = lines.find(
