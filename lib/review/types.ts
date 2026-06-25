@@ -38,6 +38,8 @@ export interface FeedbackItem {
   fieldPath?: string
   /** Concrete value auto-correct would write at `fieldPath`. */
   suggestedValue?: string
+  /** Why the change is strong, citing the relevant guideline. Shown in hints. */
+  rationale?: string
 }
 
 export interface ReviewResult {

@@ -10,8 +10,13 @@ import {
   saveResume,
   saveTemplate,
 } from "@/lib/resume/storage"
+import {
+  applyFeedbackToDraft,
+  revertPatch,
+  type ReversePatch,
+} from "@/lib/resume/apply-feedback"
 import type { Resume, TemplateId } from "@/lib/resume/types"
-import type { ReviewResult } from "@/lib/review/types"
+import type { FeedbackSection, ReviewResult } from "@/lib/review/types"
 
 export type ReviewStatus =
   | "idle"
@@ -31,6 +36,8 @@ interface ResumeStore {
   template: TemplateId
   hydrated: boolean
   review: ReviewState
+  /** Reverse patch for each applied feedback item, keyed by its feedback index. */
+  appliedFeedback: Record<number, ReversePatch>
 
   setResume: (resume: Resume) => void
   updateResume: (recipe: (draft: Resume) => void) => void
@@ -39,6 +46,13 @@ interface ResumeStore {
 
   requestReview: () => Promise<void>
   clearReview: () => void
+
+  applyFeedback: (index: number) => void
+  undoFeedback: (index: number) => void
+  applyFeedbackSection: (section: FeedbackSection) => void
+  undoFeedbackSection: (section: FeedbackSection) => void
+  applyAllFeedback: () => void
+  undoAllFeedback: () => void
 }
 
 const ResumeContext = React.createContext<ResumeStore | null>(null)
@@ -53,6 +67,9 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
     result: null,
     error: null,
   })
+  const [appliedFeedback, setAppliedFeedback] = React.useState<
+    Record<number, ReversePatch>
+  >({})
 
   // Restore from localStorage on mount. Synchronous setState here is the
   // intended hydration pattern (must run client-side, after mount).
@@ -115,13 +132,17 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
   const resetResume = React.useCallback(() => {
     setResumeState(emptyResume())
     setReview({ status: "idle", result: null, error: null })
+    setAppliedFeedback({})
   }, [])
 
   const clearReview = React.useCallback(() => {
     setReview({ status: "idle", result: null, error: null })
+    setAppliedFeedback({})
   }, [])
 
   const requestReview = React.useCallback(async () => {
+    // A fresh review invalidates applied-state indices from the previous one.
+    setAppliedFeedback({})
     setReview({ status: "loading", result: null, error: null })
     try {
       const res = await fetch("/api/review", {
@@ -158,30 +179,124 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [resume])
 
+  // Apply the feedback items at `indices`, skipping ones already applied or not
+  // auto-applicable. Batched into a single resume update and a single
+  // applied-state update.
+  const applyIndices = React.useCallback(
+    (indices: number[]) => {
+      const feedback = review.result?.feedback
+      if (!feedback) return
+      const patches: Record<number, ReversePatch> = {}
+      updateResume((draft) => {
+        for (const i of indices) {
+          const item = feedback[i]
+          if (!item || appliedFeedback[i]) continue
+          const patch = applyFeedbackToDraft(draft, item)
+          if (patch) patches[i] = patch
+        }
+      })
+      if (Object.keys(patches).length > 0) {
+        setAppliedFeedback((prev) => ({ ...prev, ...patches }))
+      }
+    },
+    [review.result, appliedFeedback, updateResume]
+  )
+
+  // Undo the applied items at `indices`, reverting in reverse application order
+  // so array add/remove patches resolve against consistent indices.
+  const undoIndices = React.useCallback(
+    (indices: number[]) => {
+      const toUndo = indices
+        .filter((i) => appliedFeedback[i])
+        .sort((a, b) => b - a)
+      if (toUndo.length === 0) return
+      updateResume((draft) => {
+        for (const i of toUndo) revertPatch(draft, appliedFeedback[i])
+      })
+      setAppliedFeedback((prev) => {
+        const next = { ...prev }
+        for (const i of toUndo) delete next[i]
+        return next
+      })
+    },
+    [appliedFeedback, updateResume]
+  )
+
+  const sectionIndices = React.useCallback(
+    (section: FeedbackSection) =>
+      (review.result?.feedback ?? []).flatMap((f, i) =>
+        f.section === section ? [i] : []
+      ),
+    [review.result]
+  )
+
+  const applyFeedback = React.useCallback(
+    (index: number) => applyIndices([index]),
+    [applyIndices]
+  )
+  const undoFeedback = React.useCallback(
+    (index: number) => undoIndices([index]),
+    [undoIndices]
+  )
+  const applyFeedbackSection = React.useCallback(
+    (section: FeedbackSection) => applyIndices(sectionIndices(section)),
+    [applyIndices, sectionIndices]
+  )
+  const undoFeedbackSection = React.useCallback(
+    (section: FeedbackSection) => undoIndices(sectionIndices(section)),
+    [undoIndices, sectionIndices]
+  )
+  const allIndices = React.useCallback(
+    () => (review.result?.feedback ?? []).map((_, i) => i),
+    [review.result]
+  )
+  const applyAllFeedback = React.useCallback(
+    () => applyIndices(allIndices()),
+    [applyIndices, allIndices]
+  )
+  const undoAllFeedback = React.useCallback(
+    () => undoIndices(allIndices()),
+    [undoIndices, allIndices]
+  )
+
   const value = React.useMemo<ResumeStore>(
     () => ({
       resume,
       template,
       hydrated,
       review,
+      appliedFeedback,
       setResume,
       updateResume,
       setTemplate,
       resetResume,
       requestReview,
       clearReview,
+      applyFeedback,
+      undoFeedback,
+      applyFeedbackSection,
+      undoFeedbackSection,
+      applyAllFeedback,
+      undoAllFeedback,
     }),
     [
       resume,
       template,
       hydrated,
       review,
+      appliedFeedback,
       setResume,
       updateResume,
       setTemplate,
       resetResume,
       requestReview,
       clearReview,
+      applyFeedback,
+      undoFeedback,
+      applyFeedbackSection,
+      undoFeedbackSection,
+      applyAllFeedback,
+      undoAllFeedback,
     ]
   )
 

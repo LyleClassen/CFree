@@ -87,6 +87,10 @@ export function normalizeReview(input: unknown): ReviewResult | null {
             message,
           }
 
+          if (typeof f.rationale === "string" && f.rationale.trim()) {
+            item.rationale = f.rationale.trim()
+          }
+
           // Pass through the structured, auto-correct fields when valid. A
           // fieldPath the app can't edit is dropped (along with its value) so
           // we never surface a suggestion that can't be applied.

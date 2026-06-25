@@ -10,6 +10,10 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { InlineSuggestions } from "@/components/resume/editor/inline-suggestions"
+import {
+  SuggestionHint,
+  type FieldHint,
+} from "@/components/resume/editor/suggestion-hint"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -170,23 +174,31 @@ export function HeaderForm() {
   )
 }
 
-/** Scaffold inserted by the metric helper for the user to fill in. */
-const METRIC_SCAFFOLD = ", reducing X by Y%"
+/** Static, guideline-based tips shown on the idea icon before a review runs. */
+const SUMMARY_HINT: FieldHint = {
+  message:
+    "Open with your target role and years of experience, then one concrete achievement — e.g. “Senior Engineer with 6 years in fintech…”.",
+  rationale:
+    "The 2026 guide says a strong summary leads with the target role and one quantified result.",
+}
+
+const BULLET_HINT: FieldHint = {
+  message:
+    "Start with a strong verb (Led, Built, Shipped), state a specific accomplishment, then add the measurable outcome and business impact.",
+  rationale:
+    "The 2026 guide expects ≥70% of experience bullets to show a measurable outcome.",
+}
 
 export function SummaryForm() {
   const { resume, updateResume } = useResumeStore()
 
-  const addMetric = () => {
-    updateResume((d) => {
-      const base = d.summary.trimEnd().replace(/[.,;]+$/, "")
-      d.summary = `${base}${METRIC_SCAFFOLD}.`
-    })
-  }
-
   return (
     <FieldGroup>
       <Field>
-        <FieldLabel htmlFor="summary">Professional summary</FieldLabel>
+        <div className="flex items-center gap-1.5">
+          <FieldLabel htmlFor="summary">Professional summary</FieldLabel>
+          <SuggestionHint fieldPath="summary" fallback={SUMMARY_HINT} />
+        </div>
         <Textarea
           id="summary"
           rows={4}
@@ -195,21 +207,9 @@ export function SummaryForm() {
           onChange={(e) => updateResume((d) => void (d.summary = e.target.value))}
         />
       </Field>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[0.7rem] leading-snug text-muted-foreground">
-          Strong summaries open with the target role and one quantified result.
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="shrink-0"
-          onClick={addMetric}
-        >
-          <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />
-          Add a metric
-        </Button>
-      </div>
+      <p className="text-[0.7rem] leading-snug text-muted-foreground">
+        Strong summaries open with the target role and one quantified result.
+      </p>
       <InlineSuggestions section="summary" />
     </FieldGroup>
   )
@@ -336,6 +336,12 @@ export function ExperienceForm() {
                 >
                   <HugeiconsIcon icon={Delete02Icon} />
                 </Button>
+                <span className="mt-1.5">
+                  <SuggestionHint
+                    fieldPath={`experience[${idx}].bullets[${bIdx}]`}
+                    fallback={BULLET_HINT}
+                  />
+                </span>
               </div>
             ))}
             <Button

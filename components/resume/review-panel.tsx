@@ -5,12 +5,16 @@ import {
   AiMagicIcon,
   Alert02Icon,
   CheckmarkCircle02Icon,
+  Tick02Icon,
+  TickDouble01Icon,
+  Undo02Icon,
 } from "@hugeicons/core-free-icons"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
+import { isApplicableFeedback } from "@/lib/resume/apply-feedback"
 import { MANUAL_CHECKLIST } from "@/lib/review/checklist"
 import { REVIEW_CATEGORIES } from "@/lib/review/types"
 import { useResumeStore } from "@/lib/resume/store"
@@ -28,7 +32,17 @@ function scoreBand(score: number): string {
 }
 
 export function ReviewPanel() {
-  const { review, requestReview } = useResumeStore()
+  const {
+    review,
+    requestReview,
+    appliedFeedback,
+    applyAllFeedback,
+    undoAllFeedback,
+  } = useResumeStore()
+
+  const feedback = review.result?.feedback ?? []
+  const applicableCount = feedback.filter(isApplicableFeedback).length
+  const appliedCount = feedback.filter((_, i) => appliedFeedback[i]).length
 
   return (
     <div className="flex flex-col gap-3">
@@ -128,12 +142,42 @@ export function ReviewPanel() {
 
           {review.result.feedback.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <span className="eyebrow">Feedback</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="eyebrow">Feedback</span>
+                {applicableCount > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1.5 text-[0.7rem]"
+                    onClick={() =>
+                      appliedCount > 0 ? undoAllFeedback() : applyAllFeedback()
+                    }
+                  >
+                    <HugeiconsIcon
+                      icon={appliedCount > 0 ? Undo02Icon : Tick02Icon}
+                      data-icon="inline-start"
+                    />
+                    {appliedCount > 0
+                      ? "Undo all"
+                      : `Apply all (${applicableCount})`}
+                  </Button>
+                )}
+              </div>
               <ul className="flex flex-col gap-1 text-xs leading-snug text-foreground/80">
                 {review.result.feedback.map((f, i) => (
                   <li key={i} className="flex gap-1.5">
                     <span className="mt-1 size-1 shrink-0 rounded-full bg-primary" />
                     <span>
+                      {appliedFeedback[i] && (
+                        <span className="mr-1 inline-flex items-center gap-0.5 rounded bg-emerald-500/15 px-1 py-0.5 align-middle text-[0.6rem] font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                          <HugeiconsIcon
+                            icon={TickDouble01Icon}
+                            className="size-2.5"
+                          />
+                          Applied
+                        </span>
+                      )}
                       <span className="font-medium capitalize">
                         {f.section}:
                       </span>{" "}

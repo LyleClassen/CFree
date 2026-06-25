@@ -53,7 +53,8 @@ async function trySidecar(
     const text = (data.text ?? "").trim()
     if (!data.ok || !text) return null
     return { text, engine: data.engine || "sidecar" }
-  } catch {
+  } catch (e) {
+    console.error("Extract: OCR sidecar request failed:", e)
     return null
   }
 }
@@ -66,7 +67,8 @@ export async function POST(
     const form = await request.formData()
     const value = form.get("file")
     if (value instanceof File) file = value
-  } catch {
+  } catch (e) {
+    console.error("Extract: failed to parse multipart form data:", e)
     file = null
   }
 
@@ -146,7 +148,8 @@ export async function POST(
     } finally {
       await parser.destroy()
     }
-  } catch {
+  } catch (e) {
+    console.error("Extract: text extraction failed:", e)
     // Native extraction failed entirely; for PDFs, fall back to OCR.
     if (isPdf) {
       return NextResponse.json({ ok: true, text: "", imageBased: true, links })

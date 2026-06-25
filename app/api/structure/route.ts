@@ -49,7 +49,8 @@ export async function POST(
   try {
     const body = await request.json()
     text = typeof body?.text === "string" ? body.text : ""
-  } catch {
+  } catch (e) {
+    console.error("Structure: invalid request body:", e)
     return NextResponse.json(
       { ok: false, error: "Invalid request body." },
       { status: 400 }
@@ -95,7 +96,8 @@ export async function POST(
     const parsed = parseLooseJson(content)
     if (!parsed) throw new Error("unparseable")
     return NextResponse.json({ ok: true, resume: normalizeResume(parsed) })
-  } catch {
+  } catch (e) {
+    console.error("Structure: LLM structuring failed, using heuristic parse:", e)
     // Degrade to heuristic parsing rather than failing the import.
     return NextResponse.json({ ok: true, resume: heuristicParse(text) })
   }

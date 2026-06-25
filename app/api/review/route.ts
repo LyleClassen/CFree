@@ -25,6 +25,7 @@ Respond with ONLY a JSON object (no markdown, no prose) in exactly this shape:
     {
       "section": "header"|"summary"|"experience"|"education"|"skills"|"general",
       "message": "<one concrete, actionable suggestion>",
+      "rationale": "<1-2 sentences: why this change is strong, citing the relevant 2026 guideline>",
       "action": "replace"|"add"|"remove"|"advice",
       "fieldPath": "<an editable path from CAPABILITIES, omit for pure advice>",
       "suggestedValue": "<the exact text to write; omit for advice/remove>"
@@ -32,7 +33,9 @@ Respond with ONLY a JSON object (no markdown, no prose) in exactly this shape:
   ]
 }
 
-Provide 4-10 feedback items. Each message must be specific and actionable, and MUST map to an editable fieldPath from CAPABILITIES (use action "advice" with no fieldPath only when no single field applies). Never suggest an edit the app cannot make. Attribute each item to the most relevant section.`
+Provide 4-10 feedback items. Each message must be specific and actionable, and MUST map to an editable fieldPath from CAPABILITIES (use action "advice" with no fieldPath only when no single field applies). Never suggest an edit the app cannot make. Attribute each item to the most relevant section. Every item MUST include a "rationale".
+
+CRITICAL — never invent facts the resume does not contain. Do not fabricate numbers, percentages, dollar amounts, timeframes, dates, employers, titles, or achievements. When a bullet or the summary would be stronger with a metric but the resume contains no real figure, do NOT write a number or a placeholder token. Instead, in "message", describe what to quantify (e.g. "add the percentage this reduced and the resulting business impact") and omit "suggestedValue". Only include "suggestedValue" when you can construct it entirely from facts already present in the resume (e.g. fixing a weak verb, reordering, or formatting).`
 
 /** Lets the client know up front whether automated review is available. */
 export async function GET(): Promise<NextResponse<{ apiKeyMissing: boolean }>> {
@@ -53,7 +56,8 @@ export async function POST(request: Request): Promise<NextResponse<ReviewRespons
     const body = await request.json()
     resume = body?.resume
     if (!resume) throw new Error("missing resume")
-  } catch {
+  } catch (e) {
+    console.error("Review: invalid request body:", e)
     return NextResponse.json(
       { ok: false, error: "Invalid request body." },
       { status: 400 }
@@ -92,6 +96,8 @@ export async function POST(request: Request): Promise<NextResponse<ReviewRespons
     })
 
     if (!res.ok) {
+      console.log('Review: failed to get review', res.status, res.statusText);
+
       return NextResponse.json(
         { ok: false, error: "Review unavailable. Please try again." },
         { status: 502 }
@@ -116,7 +122,8 @@ export async function POST(request: Request): Promise<NextResponse<ReviewRespons
     }
 
     return NextResponse.json({ ok: true, review })
-  } catch {
+  } catch (e) {
+    console.error("Review: request to OpenRouter failed:", e)
     return NextResponse.json(
       { ok: false, error: "Review unavailable. Please try again." },
       { status: 502 }
