@@ -17,23 +17,24 @@ The text may have been produced by a layout-aware extractor and can contain mark
 - "## HEADING" lines are section headings (e.g. "## SKILLS", "## EMPLOYMENT HISTORY", "## EDUCATION").
 
 Section mapping rules — follow strictly:
-- Populate "skills" ONLY from the dedicated skills section (e.g. under "## SKILLS"). Each listed item is one skill.
+- Populate "skills" ONLY from the dedicated skills section (e.g. under "## SKILLS"). "skills" is an array of groups: { "name": "<category>", "items": ["skill", ...] }. If the skills section has sub-headings (e.g. "Front-End", "Back-End", "DevOps"), make one group per sub-heading with that name. If there are no sub-headings, emit a single group with "name": "" containing all the skills.
 - Tool/technology lists that appear INSIDE an employment entry — introduced by phrases like "Technologies worked with:", "Primary Technologies Worked With:", "Tech stack:", or listed under a job — belong in that experience entry's "bullets". NEVER copy them into the top-level "skills" array.
 - "Client Projects:" / "Worked for clients:" lists under a job are also that entry's "bullets".
 - Map employment/experience headings to "experience", education to "education", and contact details to "header". Ignore sections with no matching field (languages, hobbies, references, courses, date of birth, nationality, driving licence) — do not invent fields for them.
+- For the header location, set "city" and "country" separately (e.g. "Cape Town" / "South Africa"). Drop any street address. If only one is known, fill what you can and leave the other empty.
 - For each experience entry, split "Role at Company, Location" into role, company, and location; put the date range into startDate/endDate.
 - A "[SOURCE LINKS]" block lists the document's real hyperlink targets. When present, use these exact values for the header: the "LinkedIn:" value (the full URL, e.g. "https://www.linkedin.com/in/jane/") is the "linkedin" field — never use anchor words like "LinkedIn" or "Profile" as the value. Use the "Email:" and "Phone:" values for those header fields when present.
 
 Respond with ONLY a JSON object (no markdown, no prose) in exactly this shape:
 {
-  "header": { "fullName": "", "email": "", "phone": "", "location": "", "linkedin": "" },
+  "header": { "fullName": "", "email": "", "phone": "", "city": "", "country": "", "linkedin": "" },
   "summary": "",
   "experience": [ { "company": "", "role": "", "startDate": "", "endDate": "", "location": "", "bullets": [""] } ],
   "education": [ { "institution": "", "degree": "", "field": "", "graduationDate": "", "gpa": "" } ],
-  "skills": [""]
+  "skills": [ { "name": "", "items": [""] } ]
 }
 
-Use the literal value "Present" for an ongoing role's endDate.`
+Use the literal value "Present" for an ongoing role's endDate. Use the canonical date format "Mon YYYY" (e.g. "Oct 2022") for startDate, endDate, and graduationDate.`
 
 export interface StructureResponse {
   ok: boolean

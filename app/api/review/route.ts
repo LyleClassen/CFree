@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 
+import { CAPABILITIES_PROMPT } from "@/lib/review/capabilities"
 import { normalizeReview } from "@/lib/review/normalize"
 import type { ReviewResponse } from "@/lib/review/types"
 import { readGuidelines } from "@/lib/server/guidelines"
@@ -8,6 +9,8 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 const DEFAULT_MODEL = "openai/gpt-4o-mini"
 
 const RESPONSE_INSTRUCTIONS = `You are an expert resume reviewer. Evaluate the resume JSON the user provides against the 2026 guidelines above.
+
+${CAPABILITIES_PROMPT}
 
 Respond with ONLY a JSON object (no markdown, no prose) in exactly this shape:
 {
@@ -19,11 +22,17 @@ Respond with ONLY a JSON object (no markdown, no prose) in exactly this shape:
     "format": <integer 0-100>
   },
   "feedback": [
-    { "section": "header"|"summary"|"experience"|"education"|"skills"|"general", "message": "<one concrete, actionable suggestion>" }
+    {
+      "section": "header"|"summary"|"experience"|"education"|"skills"|"general",
+      "message": "<one concrete, actionable suggestion>",
+      "action": "replace"|"add"|"remove"|"advice",
+      "fieldPath": "<an editable path from CAPABILITIES, omit for pure advice>",
+      "suggestedValue": "<the exact text to write; omit for advice/remove>"
+    }
   ]
 }
 
-Provide 4-10 feedback items. Each message must be specific and actionable. Attribute each item to the most relevant section.`
+Provide 4-10 feedback items. Each message must be specific and actionable, and MUST map to an editable fieldPath from CAPABILITIES (use action "advice" with no fieldPath only when no single field applies). Never suggest an edit the app cannot make. Attribute each item to the most relevant section.`
 
 /** Lets the client know up front whether automated review is available. */
 export async function GET(): Promise<NextResponse<{ apiKeyMissing: boolean }>> {

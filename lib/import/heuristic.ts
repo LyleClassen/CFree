@@ -130,11 +130,15 @@ export function heuristicParse(text: string): Resume {
   }
 
   if (buckets.skills.length > 0) {
-    resume.skills = buckets.skills
+    const items = buckets.skills
       .join(",")
       .split(/[,•|]/)
       .map((s) => s.trim())
       .filter((s) => s.length > 0 && s.length < 60)
+    if (items.length > 0) {
+      // Heuristic mode can't infer categories — emit one uncategorized group.
+      resume.skills = [{ id: makeId(), name: "", items }]
+    }
   }
 
   return resume

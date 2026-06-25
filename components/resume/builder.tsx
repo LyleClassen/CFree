@@ -81,7 +81,7 @@ const SECTIONS: SectionDef[] = [
     index: "05",
     title: "Skills",
     hint: "Tools & strengths",
-    filled: (r) => r.skills.length > 0,
+    filled: (r) => r.skills.some((g) => g.items.length > 0),
     Form: SkillsForm,
   },
 ]

@@ -23,9 +23,16 @@ export function InlineSuggestions({ section }: { section: FeedbackSection }) {
         <HugeiconsIcon icon={AiMagicIcon} className="size-3" />
         Suggestions
       </div>
-      <ul className="list-disc space-y-0.5 pl-4 text-[0.72rem] leading-snug text-foreground/80">
+      <ul className="list-disc space-y-1 pl-4 text-[0.72rem] leading-snug text-foreground/80">
         {items.map((item, i) => (
-          <li key={i}>{item.message}</li>
+          <li key={i}>
+            {item.message}
+            {item.suggestedValue && (
+              <span className="mt-0.5 block rounded bg-background/60 px-1.5 py-0.5 font-mono text-[0.68rem] text-foreground/70">
+                Suggested: {item.suggestedValue}
+              </span>
+            )}
+          </li>
         ))}
       </ul>
     </div>

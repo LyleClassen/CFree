@@ -138,6 +138,11 @@ export function ReviewPanel() {
                         {f.section}:
                       </span>{" "}
                       {f.message}
+                      {f.suggestedValue && (
+                        <span className="mt-0.5 block rounded bg-muted px-1.5 py-0.5 font-mono text-[0.68rem] text-muted-foreground">
+                          Suggested: {f.suggestedValue}
+                        </span>
+                      )}
                     </span>
                   </li>
                 ))}

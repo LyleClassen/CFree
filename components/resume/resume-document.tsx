@@ -299,6 +299,15 @@ function makeStyles(t: TemplateTheme) {
     skillSep: {
       color: t.faint,
     },
+    skillGroup: {
+      marginBottom: 3,
+    },
+    skillGroupLabel: {
+      fontSize: 9.5,
+      fontFamily: t.bold,
+      color: t.ink,
+      marginRight: 6,
+    },
   })
 }
 
@@ -389,7 +398,13 @@ export function ResumeDocument({
       text: header.phone,
       href: `tel:${header.phone.replace(/[^\d+]/g, "")}`,
     },
-    header.location && { text: header.location },
+    (() => {
+      const place = [header.city, header.country]
+        .map((p) => p?.trim())
+        .filter(Boolean)
+        .join(", ")
+      return place ? { text: place } : false
+    })(),
     header.linkedin && {
       text: displayLinkedIn(header.linkedin.trim()),
       href: normalizeUrl(header.linkedin.trim()),
@@ -508,18 +523,29 @@ export function ResumeDocument({
           </Section>
         )}
 
-        {skills.length > 0 && (
+        {skills.some((g) => g.items.length > 0) && (
           <Section title="Skills" theme={theme} styles={styles}>
-            <View style={styles.skillsWrap}>
-              {skills.map((skill, i) => (
-                <Text key={i} style={styles.skillChip}>
-                  {skill}
-                  {i < skills.length - 1 && (
-                    <Text style={styles.skillSep}>{"   /"}</Text>
-                  )}
-                </Text>
+            {skills
+              .filter((g) => g.items.length > 0)
+              .map((group) => (
+                <View key={group.id} style={styles.skillGroup}>
+                  <View style={styles.skillsWrap}>
+                    {group.name.trim().length > 0 && (
+                      <Text style={styles.skillGroupLabel}>
+                        {group.name.trim()}:
+                      </Text>
+                    )}
+                    {group.items.map((skill, i) => (
+                      <Text key={i} style={styles.skillChip}>
+                        {skill}
+                        {i < group.items.length - 1 && (
+                          <Text style={styles.skillSep}>{"   /"}</Text>
+                        )}
+                      </Text>
+                    ))}
+                  </View>
+                </View>
               ))}
-            </View>
           </Section>
         )}
       </Page>

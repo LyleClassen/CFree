@@ -14,7 +14,12 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { emptyEducation, emptyExperience } from "@/lib/resume/factory"
+import { normalizeDateString } from "@/lib/resume/dates"
+import {
+  emptyEducation,
+  emptyExperience,
+  emptySkillGroup,
+} from "@/lib/resume/factory"
 import { useResumeStore } from "@/lib/resume/store"
 import { PRESENT } from "@/lib/resume/types"
 
@@ -22,12 +27,14 @@ function TextField({
   label,
   value,
   onChange,
+  onBlur,
   placeholder,
   type = "text",
 }: {
   label: string
   value: string
   onChange: (v: string) => void
+  onBlur?: () => void
   placeholder?: string
   type?: string
 }) {
@@ -41,6 +48,7 @@ function TextField({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
       />
     </Field>
   )
@@ -139,25 +147,42 @@ export function HeaderForm() {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <TextField
-          label="Location"
-          value={h.location}
-          placeholder="San Francisco, CA"
-          onChange={(v) => updateResume((d) => void (d.header.location = v))}
+          label="City"
+          value={h.city}
+          placeholder="Cape Town"
+          onChange={(v) => updateResume((d) => void (d.header.city = v))}
         />
         <TextField
-          label="LinkedIn"
-          value={h.linkedin ?? ""}
-          placeholder="linkedin.com/in/jane"
-          onChange={(v) => updateResume((d) => void (d.header.linkedin = v))}
+          label="Country"
+          value={h.country}
+          placeholder="South Africa"
+          onChange={(v) => updateResume((d) => void (d.header.country = v))}
         />
       </div>
+      <TextField
+        label="LinkedIn"
+        value={h.linkedin ?? ""}
+        placeholder="linkedin.com/in/jane"
+        onChange={(v) => updateResume((d) => void (d.header.linkedin = v))}
+      />
       <InlineSuggestions section="header" />
     </FieldGroup>
   )
 }
 
+/** Scaffold inserted by the metric helper for the user to fill in. */
+const METRIC_SCAFFOLD = ", reducing X by Y%"
+
 export function SummaryForm() {
   const { resume, updateResume } = useResumeStore()
+
+  const addMetric = () => {
+    updateResume((d) => {
+      const base = d.summary.trimEnd().replace(/[.,;]+$/, "")
+      d.summary = `${base}${METRIC_SCAFFOLD}.`
+    })
+  }
+
   return (
     <FieldGroup>
       <Field>
@@ -170,6 +195,21 @@ export function SummaryForm() {
           onChange={(e) => updateResume((d) => void (d.summary = e.target.value))}
         />
       </Field>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[0.7rem] leading-snug text-muted-foreground">
+          Strong summaries open with the target role and one quantified result.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+          onClick={addMetric}
+        >
+          <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />
+          Add a metric
+        </Button>
+      </div>
       <InlineSuggestions section="summary" />
     </FieldGroup>
   )
@@ -216,6 +256,14 @@ export function ExperienceForm() {
               onChange={(v) =>
                 updateResume((d) => void (d.experience[idx].startDate = v))
               }
+              onBlur={() =>
+                updateResume(
+                  (d) =>
+                    void (d.experience[idx].startDate = normalizeDateString(
+                      d.experience[idx].startDate
+                    ))
+                )
+              }
             />
             <TextField
               label="End"
@@ -223,6 +271,14 @@ export function ExperienceForm() {
               placeholder="Present"
               onChange={(v) =>
                 updateResume((d) => void (d.experience[idx].endDate = v))
+              }
+              onBlur={() =>
+                updateResume(
+                  (d) =>
+                    void (d.experience[idx].endDate = normalizeDateString(
+                      d.experience[idx].endDate
+                    ))
+                )
               }
             />
             <TextField
@@ -364,6 +420,14 @@ export function EducationForm() {
               onChange={(v) =>
                 updateResume((d) => void (d.education[idx].graduationDate = v))
               }
+              onBlur={() =>
+                updateResume(
+                  (d) =>
+                    void (d.education[idx].graduationDate = normalizeDateString(
+                      d.education[idx].graduationDate
+                    ))
+                )
+              }
             />
             <TextField
               label="GPA (optional)"
@@ -394,24 +458,66 @@ export function EducationForm() {
   )
 }
 
-export function SkillsForm() {
+/** A single skill category: editable name, reorder/remove, and its skill chips. */
+function SkillGroupEditor({ index, count }: { index: number; count: number }) {
   const { resume, updateResume } = useResumeStore()
+  const group = resume.skills[index]
   const [draft, setDraft] = React.useState("")
 
   const addSkill = () => {
     const value = draft.trim()
     if (!value) return
-    updateResume((d) => void d.skills.push(value))
+    updateResume((d) => void d.skills[index].items.push(value))
     setDraft("")
   }
 
   return (
-    <FieldGroup>
-      <Field>
-        <FieldLabel htmlFor="skill-input">Skills</FieldLabel>
+    <div className="rounded-lg border bg-background">
+      <div className="flex items-center gap-1.5 border-b bg-muted/30 px-3 py-2">
+        <Input
+          value={group.name}
+          placeholder="Category (e.g. Front-End)"
+          className="h-7 border-0 bg-transparent px-0 text-xs font-medium shadow-none focus-visible:ring-0"
+          onChange={(e) =>
+            updateResume((d) => void (d.skills[index].name = e.target.value))
+          }
+        />
+        <div className="flex items-center gap-0.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Move up"
+            disabled={index === 0}
+            onClick={() => updateResume((d) => move(d.skills, index, index - 1))}
+          >
+            <HugeiconsIcon icon={ArrowUp01Icon} />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Move down"
+            disabled={index === count - 1}
+            onClick={() => updateResume((d) => move(d.skills, index, index + 1))}
+          >
+            <HugeiconsIcon icon={ArrowDown01Icon} />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Remove category"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={() => updateResume((d) => void d.skills.splice(index, 1))}
+          >
+            <HugeiconsIcon icon={Delete02Icon} />
+          </Button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2 p-3">
         <div className="flex gap-2">
           <Input
-            id="skill-input"
             value={draft}
             placeholder="Add a skill, press Enter"
             onChange={(e) => setDraft(e.target.value)}
@@ -426,28 +532,54 @@ export function SkillsForm() {
             Add
           </Button>
         </div>
-      </Field>
-      {resume.skills.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {resume.skills.map((skill, idx) => (
-            <span
-              key={`${skill}-${idx}`}
-              className="inline-flex items-center gap-1 rounded-full border bg-muted/50 py-0.5 pr-1.5 pl-2.5 text-xs"
-            >
-              {skill}
-              <button
-                type="button"
-                aria-label={`Remove ${skill}`}
-                className="text-muted-foreground hover:text-destructive"
-                onClick={() => updateResume((d) => void d.skills.splice(idx, 1))}
+        {group.items.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {group.items.map((skill, sIdx) => (
+              <span
+                key={`${skill}-${sIdx}`}
+                className="inline-flex items-center gap-1 rounded-full border bg-muted/50 py-0.5 pr-1.5 pl-2.5 text-xs"
               >
-                <HugeiconsIcon icon={Delete02Icon} className="size-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
+                {skill}
+                <button
+                  type="button"
+                  aria-label={`Remove ${skill}`}
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() =>
+                    updateResume((d) => void d.skills[index].items.splice(sIdx, 1))
+                  }
+                >
+                  <HugeiconsIcon icon={Delete02Icon} className="size-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function SkillsForm() {
+  const { resume, updateResume } = useResumeStore()
+  const groups = resume.skills
+
+  return (
+    <div className="flex flex-col gap-3">
+      {groups.map((group, idx) => (
+        <SkillGroupEditor key={group.id} index={idx} count={groups.length} />
+      ))}
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="self-start"
+        onClick={() => updateResume((d) => void d.skills.push(emptySkillGroup()))}
+      >
+        <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />
+        Add category
+      </Button>
       <InlineSuggestions section="skills" />
-    </FieldGroup>
+    </div>
   )
 }

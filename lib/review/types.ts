@@ -22,9 +22,22 @@ export type FeedbackSection =
   | "skills"
   | "general"
 
+/** What a future auto-correct would do with a feedback item's suggested value. */
+export type FeedbackAction = "replace" | "add" | "remove" | "advice"
+
 export interface FeedbackItem {
   section: FeedbackSection
   message: string
+  /** What auto-correct would do; defaults to "advice" (no automatic edit). */
+  action?: FeedbackAction
+  /**
+   * Dot/bracket path into the `Resume` the suggestion targets, e.g.
+   * "header.city", "experience[0].bullets[2]", "skills". Only present when the
+   * app can apply the edit. Validated against the capabilities manifest.
+   */
+  fieldPath?: string
+  /** Concrete value auto-correct would write at `fieldPath`. */
+  suggestedValue?: string
 }
 
 export interface ReviewResult {

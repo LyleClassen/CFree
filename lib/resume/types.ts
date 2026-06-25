@@ -5,7 +5,10 @@ export interface ResumeHeader {
   fullName: string
   email: string
   phone: string
-  location: string
+  city: string
+  country: string
+  /** @deprecated Legacy single location field — kept only for migration. */
+  location?: string
   linkedin?: string
 }
 
@@ -30,12 +33,20 @@ export interface EducationEntry {
   gpa?: string
 }
 
+/** A named group of skills, e.g. { name: "Front-End", items: ["React", "CSS"] }. */
+export interface SkillGroup {
+  id: string
+  /** Category label; an empty string denotes an uncategorized group. */
+  name: string
+  items: string[]
+}
+
 export interface Resume {
   header: ResumeHeader
   summary: string
   experience: ExperienceEntry[]
   education: EducationEntry[]
-  skills: string[]
+  skills: SkillGroup[]
 }
 
 /** The set of available template identifiers. */

@@ -1,4 +1,9 @@
+import {
+  FEEDBACK_ACTIONS,
+  isEditableFieldPath,
+} from "@/lib/review/capabilities"
 import type {
+  FeedbackAction,
   FeedbackItem,
   FeedbackSection,
   ReviewCategory,
@@ -31,6 +36,12 @@ function toSection(v: unknown): FeedbackSection {
   return SECTIONS.includes(v as FeedbackSection)
     ? (v as FeedbackSection)
     : "general"
+}
+
+function toAction(v: unknown): FeedbackAction | undefined {
+  return FEEDBACK_ACTIONS.includes(v as FeedbackAction)
+    ? (v as FeedbackAction)
+    : undefined
 }
 
 /**
@@ -70,7 +81,30 @@ export function normalizeReview(input: unknown): ReviewResult | null {
           const f = raw as Record<string, unknown>
           const message = typeof f.message === "string" ? f.message : ""
           if (!message.trim()) return null
-          return { section: toSection(f.section), message }
+
+          const item: FeedbackItem = {
+            section: toSection(f.section),
+            message,
+          }
+
+          // Pass through the structured, auto-correct fields when valid. A
+          // fieldPath the app can't edit is dropped (along with its value) so
+          // we never surface a suggestion that can't be applied.
+          const action = toAction(f.action)
+          const fieldPath =
+            typeof f.fieldPath === "string" && isEditableFieldPath(f.fieldPath)
+              ? f.fieldPath
+              : undefined
+          if (fieldPath) {
+            item.fieldPath = fieldPath
+            if (typeof f.suggestedValue === "string") {
+              item.suggestedValue = f.suggestedValue
+            }
+            item.action = action ?? "replace"
+          } else if (action) {
+            item.action = action
+          }
+          return item
         }
         return null
       })

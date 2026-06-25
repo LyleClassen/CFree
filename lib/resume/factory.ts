@@ -2,6 +2,7 @@ import type {
   EducationEntry,
   ExperienceEntry,
   Resume,
+  SkillGroup,
 } from "@/lib/resume/types"
 
 /** Stable-ish unique id for repeatable entries (client-only usage). */
@@ -19,7 +20,8 @@ export function emptyResume(): Resume {
       fullName: "",
       email: "",
       phone: "",
-      location: "",
+      city: "",
+      country: "",
       linkedin: "",
     },
     summary: "",
@@ -38,6 +40,14 @@ export function emptyExperience(): ExperienceEntry {
     endDate: "",
     location: "",
     bullets: [""],
+  }
+}
+
+export function emptySkillGroup(name = ""): SkillGroup {
+  return {
+    id: makeId(),
+    name,
+    items: [],
   }
 }
 
