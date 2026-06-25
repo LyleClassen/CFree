@@ -1,6 +1,8 @@
 import {
-  FEEDBACK_ACTIONS,
   isEditableFieldPath,
+} from "@/lib/resume/editable-paths"
+import {
+  FEEDBACK_ACTIONS,
 } from "@/lib/review/capabilities"
 import type {
   FeedbackAction,

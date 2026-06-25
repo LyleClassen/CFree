@@ -1,12 +1,13 @@
 // Resolves a feedback item's `fieldPath` against the live `Resume` and applies
-// (or reverts) its `suggestedValue`. The set of paths handled here mirrors the
-// editable-path manifest in `@/lib/review/capabilities` — feedback is already
-// validated against that manifest in `normalizeReview`, so by the time an item
-// reaches us its `fieldPath` is known-editable; we only narrow further to the
-// subset auto-correct can apply from a string `suggestedValue`.
+// (or reverts) its `suggestedValue`.
 
 import type { Resume } from "@/lib/resume/types"
 import type { FeedbackItem } from "@/lib/review/types"
+import {
+  isReplaceableFieldPath,
+  isAddableStringFieldPath,
+  isRemovableFieldPath,
+} from "@/lib/resume/editable-paths"
 
 /** Tokenize a dot/bracket path into segments, e.g.
  * "experience[0].bullets[2]" -> ["experience", 0, "bullets", 2]. */
@@ -48,37 +49,6 @@ function resolveParent(
   }
 }
 
-// Paths whose value is an editable string — `replace` targets.
-const STRING_FIELD_PATTERNS: RegExp[] = [
-  /^header\.(fullName|email|phone|city|country|linkedin)$/,
-  /^summary$/,
-  /^experience\[\d+\]\.(role|company|startDate|endDate|location)$/,
-  /^experience\[\d+\]\.bullets\[\d+\]$/,
-  /^education\[\d+\]\.(institution|degree|field|graduationDate|gpa)$/,
-  /^skills\[\d+\]\.name$/,
-  /^skills\[\d+\]\.items\[\d+\]$/,
-]
-
-// Containers that hold strings — the only `add` targets we can fill from a
-// string `suggestedValue` (top-level entry arrays need a structured object).
-const STRING_ARRAY_PATTERNS: RegExp[] = [
-  /^experience\[\d+\]\.bullets$/,
-  /^skills\[\d+\]\.items$/,
-]
-
-// Array elements that can be removed.
-const ARRAY_ELEMENT_PATTERNS: RegExp[] = [
-  /^experience\[\d+\]$/,
-  /^education\[\d+\]$/,
-  /^skills\[\d+\]$/,
-  /^experience\[\d+\]\.bullets\[\d+\]$/,
-  /^skills\[\d+\]\.items\[\d+\]$/,
-]
-
-function matchesAny(path: string, patterns: RegExp[]): boolean {
-  return patterns.some((re) => re.test(path))
-}
-
 /**
  * True when a feedback item carries a concrete edit auto-correct can apply.
  * Pure (path + action + value only) so the UI can use it to decide whether to
@@ -89,17 +59,11 @@ export function isApplicableFeedback(item: FeedbackItem): boolean {
   if (!fieldPath || !action) return false
   switch (action) {
     case "replace":
-      return (
-        typeof item.suggestedValue === "string" &&
-        matchesAny(fieldPath, STRING_FIELD_PATTERNS)
-      )
+      return typeof item.suggestedValue === "string" && isReplaceableFieldPath(fieldPath)
     case "add":
-      return (
-        typeof item.suggestedValue === "string" &&
-        matchesAny(fieldPath, STRING_ARRAY_PATTERNS)
-      )
+      return typeof item.suggestedValue === "string" && isAddableStringFieldPath(fieldPath)
     case "remove":
-      return matchesAny(fieldPath, ARRAY_ELEMENT_PATTERNS)
+      return isRemovableFieldPath(fieldPath)
     default:
       return false
   }

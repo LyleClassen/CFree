@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { CAPABILITIES_PROMPT } from "@/lib/review/capabilities"
+import { buildCapabilitiesPrompt } from "@/lib/resume/editable-paths"
 import { normalizeReview } from "@/lib/review/normalize"
 import type { ReviewResponse } from "@/lib/review/types"
 import { readGuidelines } from "@/lib/server/guidelines"
@@ -8,9 +8,10 @@ import { readGuidelines } from "@/lib/server/guidelines"
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 const DEFAULT_MODEL = "openai/gpt-4o-mini"
 
-const RESPONSE_INSTRUCTIONS = `You are an expert resume reviewer. Evaluate the resume JSON the user provides against the 2026 guidelines above.
+function buildResponseInstructions(): string {
+  return `You are an expert resume reviewer. Evaluate the resume JSON the user provides against the 2026 guidelines above.
 
-${CAPABILITIES_PROMPT}
+${buildCapabilitiesPrompt()}
 
 Respond with ONLY a JSON object (no markdown, no prose) in exactly this shape:
 {
@@ -36,6 +37,7 @@ Respond with ONLY a JSON object (no markdown, no prose) in exactly this shape:
 Provide 4-10 feedback items. Each message must be specific and actionable, and MUST map to an editable fieldPath from CAPABILITIES (use action "advice" with no fieldPath only when no single field applies). Never suggest an edit the app cannot make. Attribute each item to the most relevant section. Every item MUST include a "rationale".
 
 CRITICAL — never invent facts the resume does not contain. Do not fabricate numbers, percentages, dollar amounts, timeframes, dates, employers, titles, or achievements. When a bullet or the summary would be stronger with a metric but the resume contains no real figure, do NOT write a number or a placeholder token. Instead, in "message", describe what to quantify (e.g. "add the percentage this reduced and the resulting business impact") and omit "suggestedValue". Only include "suggestedValue" when you can construct it entirely from facts already present in the resume (e.g. fixing a weak verb, reordering, or formatting).`
+}
 
 /** Lets the client know up front whether automated review is available. */
 export async function GET(): Promise<NextResponse<{ apiKeyMissing: boolean }>> {
@@ -89,7 +91,7 @@ export async function POST(request: Request): Promise<NextResponse<ReviewRespons
         temperature: 0.2,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: `${guidelines}\n\n---\n\n${RESPONSE_INSTRUCTIONS}` },
+          { role: "system", content: `${guidelines}\n\n---\n\n${buildResponseInstructions()}` },
           { role: "user", content: JSON.stringify(resume) },
         ],
       }),
